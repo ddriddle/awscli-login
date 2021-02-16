@@ -1,0 +1,46 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: A job to say hello
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Cache python site-package
+        uses: actions/cache@v2
+        id: python
+        with:
+          path: |
+              ${{ env.pythonLocation}}/bin
+              ${{ env.pythonLocation}}/lib/python3.9/site-packages
+          key: ${{ runner.os }}-python-test-5
+
+      - name: Validate python site-package
+        uses: ./.github/actions/cache-validation
+        id: cache
+        with:
+          path: |
+              ${{ env.pythonLocation}}/bin
+              ${{ env.pythonLocation}}/lib/python3.9/site-packages
+          cache_hit: ${{ steps.python.outputs.cache-hit }}
+
+      - name: list
+        run: ls -lR ${{ env.pythonLocation}}
+
+      - name: cat bin
+        run: cat ${{ env.pythonLocation}}/bin/MD5SUMS || exit 0
+
+      - name: cat site-packages
+        run: cat ${{ env.pythonLocation}}/lib/python3.9/site-packages/MD5SUMS || exit 0
+
+      - name: echo
+        run: echo ${{ steps.cache.outputs.valid }}
