@@ -7,14 +7,8 @@ from datetime import datetime, timedelta
 
 WEEK = timedelta(days=7)
 
-def done(old: bool, oldest=None):
-    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#using-workflow-commands-to-access-toolkit-functions
-    github_workflow_cmd = "::set-output name=weekold::"
-
-    print(github_workflow_cmd, old, sep='')
+def done(old: bool):
     print("Are any of the files one week old or older?", old, file=sys.stderr)
-    if oldest is not None:
-        print("Oldest file is", oldest, "old", file=sys.stderr)
     exit(int(old))
 
 def main():
@@ -31,13 +25,15 @@ def main():
         if age > oldest:
             oldest = age
         if age < WEEK:
-            done(False, oldest)
+            done(False)
 
-    return oldest
+    print("Oldest file is", oldest, "old", file=sys.stderr)
 
 if __name__ == "__main__":
     try:
-        oldest = main()
-        done(True, oldest)
+        main()
     except Exception as e:
         print(e, file=sys.stderr)
+        exit(1)
+
+    done(True)

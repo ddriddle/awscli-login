@@ -93,28 +93,20 @@ jobs:
             **/cache
         key: ${{ runner.os }}-${{ matrix.python-version }}-tox-${{ hashFiles('**/setup.py', '**/tox.ini') }}-${{ secrets.CACHE_VERSION }}
 
-    - name: Is cache old?
+    - name: Validate cache
       if: steps.tox.outputs.cache-hit == 'true'
-      id: age
+      id: cache
       run: |
-        set -x
-        if python scripts/weekold.py cache/*
-        then
-            # touch cache and tox env so make will not rebuild them
-            touch -c cache .tox/wheel/pyvenv.cfg
-        else
-            # If cache is old force rebuild of tox virtualenv(s)
-            rm -rf .tox cache
-        fi
+        ./scripts/validate
       shell: bash
 
     - name: Install system dependencies
-      if: matrix.os == 'ubuntu-latest' && (steps.tox.outputs.cache-hit != 'true' || steps.age.outputs.weekold == 'True')
+      if: matrix.os == 'ubuntu-latest' && (steps.tox.outputs.cache-hit != 'true' || steps.cache.outputs.invalid == 'True')
       run: |
         sudo apt-get install -y libxml2-dev libxslt-dev
 
     - name: Upgrade pip
-      if: steps.tox.outputs.cache-hit != 'true' || steps.age.outputs.weekold == 'True'
+      if: steps.tox.outputs.cache-hit != 'true' || steps.cache.outputs.invalid == 'True'
       run: |
         python -m pip install --upgrade --upgrade-strategy eager pip
 
@@ -123,15 +115,19 @@ jobs:
         python -m pip install --upgrade --upgrade-strategy eager tox wheel
 
     - name: Update Python wheel cache
-      if: steps.tox.outputs.cache-hit != 'true' || steps.age.outputs.weekold == 'True'
+      if: steps.tox.outputs.cache-hit != 'true' || steps.cache.outputs.invalid == 'True'
       run: make cache
 
     - name: Install
-      if: steps.tox.outputs.cache-hit != 'true' || steps.age.outputs.weekold == 'True'
+      if: steps.tox.outputs.cache-hit != 'true' || steps.cache.outputs.invalid == 'True'
       run: make install
 
     - name: Installed dependencies
       run: make freeze
+
+    - name: Make checksums for cache
+      if: steps.tox.outputs.cache-hit != 'true' || steps.cache.outputs.invalid == 'True'
+      run: make checksums
 
     - name: Tests
       run: make test

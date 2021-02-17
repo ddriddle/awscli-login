@@ -1,6 +1,7 @@
 PACKAGE_NAME := awscli-login
+_PACKAGE_NAME := awscli_login
 
-PKG  := src/awscli_login
+PKG  := src/$(_PACKAGE_NAME)
 TPKG := src/tests
 MODULE_SRCS := $(wildcard $(PKG)/*.py)
 export TSTS := $(wildcard $(TPKG)/*.py $(TPKG)/*/*.py)
@@ -64,7 +65,17 @@ $(TOX_ENV): build | cache
 # https://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
 cache: setup.py | build
 	pip wheel --wheel-dir=$@ $(WHEEL) $(WHEEL)[test] coverage
+	md5sum cache/*.whl > cache/md5sum
 	@touch $@
+
+.PHONY: checksums
+checksums: cache/MD5SUM .tox/MD5SUM
+
+cache/MD5SUM:
+	md5sum cache/*.whl > $@
+
+.tox/MD5SUM:
+	find .tox -not -path $@ -not -path '*/$(_PACKAGE_NAME)*' -type f -print0 | xargs -0 md5sum > $@
 
 # Run tests on multiple versions of Python (POSIX only)
 tox: .python-version build | cache
