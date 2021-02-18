@@ -93,6 +93,12 @@ jobs:
             **/cache
         key: ${{ runner.os }}-${{ matrix.python-version }}-tox-${{ hashFiles('**/setup.py', '**/tox.ini') }}-${{ secrets.CACHE_VERSION }}
 
+    # The Validate cache step uses md5sum
+    - name: Install md5sum 
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install md5sha1sum
+
     - name: Validate cache
       if: steps.tox.outputs.cache-hit == 'true'
       id: cache
