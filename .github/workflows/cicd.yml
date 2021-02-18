@@ -97,7 +97,7 @@ jobs:
     - name: Install md5sum 
       if: matrix.os == 'macos-latest'
       run: |
-        brew install md5sha1sum
+        brew install coreutils
 
     - name: Validate cache
       if: steps.tox.outputs.cache-hit == 'true'
