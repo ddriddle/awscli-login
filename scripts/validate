@@ -1,8 +1,9 @@
 #!/bin/bash
 
+MD5OPTS="--quiet --strict"
 MD5SUMS="cache/MD5SUM .tox/MD5SUM"
 
-if python scripts/weekold.py cache/* && md5sum --strict -c $MD5SUMS <&-
+if python scripts/weekold.py cache/* && md5sum $MD5OPTS -c $MD5SUMS <&-
 then
     echo "Touching cache and tox env so make will not rebuild them."
     touch -c cache .tox/wheel/pyvenv.cfg

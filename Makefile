@@ -65,14 +65,13 @@ $(TOX_ENV): build | cache
 # https://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
 cache: setup.py | build
 	pip wheel --wheel-dir=$@ $(WHEEL) $(WHEEL)[test] coverage
-	md5sum cache/*.whl > cache/md5sum
 	@touch $@
 
 .PHONY: checksums
 checksums: cache/MD5SUM .tox/MD5SUM
 
 cache/MD5SUM:
-	md5sum cache/*.whl > $@
+	md5sum --binary cache/*.whl > $@
 
 .tox/MD5SUM:
 	find .tox -not -path $@ -not -path '*/$(_PACKAGE_NAME)*' -type f -print0 | xargs -0 md5sum > $@
