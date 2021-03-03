@@ -16,12 +16,6 @@ jobs:
       with:
         python-version: 3.9
 
-    - name: Save pip cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ secrets.CACHE_VERSION }}
-
     - name: Get date
       id: date
       run: echo "::set-output name=week::$(date '+%U')"
@@ -97,16 +91,6 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: build
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: echo "::set-output name=dir::$(python -m pip cache dir)"
-
-    - name: Save pip cache
-      uses: actions/cache@v2
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ secrets.CACHE_VERSION }}
 
     - name: Get date
       id: date
@@ -210,12 +194,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.9
-
-    - name: Save pip cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ secrets.CACHE_VERSION }}
 
     - name: Get date
       id: date
