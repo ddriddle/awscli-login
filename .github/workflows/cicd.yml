@@ -2,9 +2,10 @@ name: CI/CD
 
 on: [push, pull_request]
 
+env:
+  TOX_PARALLEL_NO_SPINNER: 1
+
 jobs:
-  env:
-    - TOX_PARALLEL_NO_SPINNER: 1
 
   build:
     runs-on: ubuntu-latest
