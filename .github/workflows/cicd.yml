@@ -136,6 +136,15 @@ jobs:
         echo "PYTHON_LIB=$pythonLocation\\Lib\\site-packages" >> $GITHUB_ENV
       shell: bash
 
+    - name: DEBUG
+      run: |
+        ls $PYTHON_BIN
+        echo "--------------------"
+        ls $PYTHON_LIB
+        echo "--------------------"
+        ls -lR $pythonLocation
+      shell: bash
+
     - name: Cache tox virtualenv and site-package
       uses: actions/cache@v2
       id: python
