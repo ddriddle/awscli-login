@@ -195,12 +195,12 @@ jobs:
     - name: Build tox environments
       if: steps.cache.outputs.valid != 'true'
       run: |
-        tox --installpkg dist/*.whl --notest
+        tox --installpkg dist/*.whl --notest --parallel
       shell: bash
 
     - name: Run tox tests
       run: |
-        tox --skip-pkg-install
+        tox --skip-pkg-install --parallel
 
 #    - name: Update Python wheel cache
 #      if: steps.cache.outputs.valid != 'true'
