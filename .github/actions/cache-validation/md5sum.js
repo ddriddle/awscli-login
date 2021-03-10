@@ -66,5 +66,5 @@ try {
   });
 
 } catch (error) {
-  util.error(e);
+  util.error(error);
 }
