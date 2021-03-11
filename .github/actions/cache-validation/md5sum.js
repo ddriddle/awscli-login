@@ -12,59 +12,58 @@ const path = require('path');
 
 const util = require('./utils.js');
 
-let total = 0;
-
 // The code for this function was taken from this blog post:
 // https://allenhwkim.medium.com/nodejs-walk-directory-f30a2d8f038f
 function walkDir(dir, callback) {
-  fs.readdirSync(dir).forEach( f => {
+  for (const f of fs.readdirSync(dir)) {
     const dirPath = path.join(dir, f);
     const isDirectory = fs.statSync(dirPath).isDirectory();
     isDirectory ?
       walkDir(dirPath, callback) : callback(path.join(dir, f));
-  });
+  }
 };
 
 function createMD5SUMS(directory) {
-  const filename = path.join(directory, "MD5SUMS")
-  const stream = fs.createWriteStream(filename, {flags:'ax'});
-
-  stream.on('error', function(e) {
-      util.errorMessage(`${e.message}`);
-  });
+  const file = fs.openSync(path.join(directory, "MD5SUMS"), 'w');
 
   let count = 0;
   walkDir(directory, function(filePath) {
     if (path.basename(filePath) != 'MD5SUMS') {
       const contents = fs.readFileSync(filePath, 'utf8');
       const hash = crypto.createHash('md5').update(contents).digest("hex")
-      stream.write(`${hash}  ${filePath}\n`);
+      fs.writeSync(file, `${hash}  ${filePath}\n`);
       count++;
     }
   });
 
-  stream.end();
+  fs.close(file);
   console.log(`${directory}: hashed ${count} files.`);
   total += count;
 }
 
-try {
-  if (process.env['INPUT_CACHE_HIT'] === 'true') {
-    console.log('Cache hit no need to build MD5SUMS.')
-    process.exit(0);
+function initGlobalVars() {
+  /* variables for keeping track of stats */
+  global.total = 0;
+  
+  /* Return 1 on checksum or file errors if true, otherwise 0 */
+  global.fatal = false;
+}
+
+exports.main = function () {
+  initGlobalVars();
+
+  function stats() {
+    console.log(`Total files hashed ${total}.`);
   }
 
-  process.on('exit', (code) => {
-    console.log(`Total files hashed ${total}.`);
-  });
+  function dir(directory) {
+    return directory;
+  }
 
+  util.mainHandler(util.ON_CACHE_HIT, stats, createMD5SUMS, dir);
+}
 
-  process.env['INPUT_PATH'].split('\n').forEach(function (directory, index) {
-    if (directory.trim() !== '') {
-        util.fileError(createMD5SUMS, directory);
-    }
-  });
-
-} catch (error) {
-  util.error(error);
+/* istanbul ignore next */
+if (require.main === module) {
+  exports.main();
 }

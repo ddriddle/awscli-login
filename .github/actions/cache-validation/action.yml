@@ -7,6 +7,9 @@ inputs:
   cache_hit:
     description: 'A boolean value to indicate if a cache hit occurred.'
     required: true
+  fatal:
+    description: 'A boolean value to indicate if checksum erros should be treated as fatal errors.'
+    required: false
 outputs:
   valid:
     description: 'A boolean value to indicate if all files exit and are valid.'

@@ -13,10 +13,6 @@ const readline = require('readline');
 
 const util = require('./utils.js');
 
-let invalid = 0;
-let missing = 0;
-let valid = 0;
-
 function checkHash(filePath, old_hash) {
   missing++;
   const fileContents = fs.readFileSync(filePath, 'utf8');
@@ -34,7 +30,7 @@ function checkHash(filePath, old_hash) {
 function checkHashes(filePath) {
   const stream = fs.createReadStream(filePath);
   stream.on('error', function(e) {
-      util.errorMessage(`${e.message}`);
+      util.error(e);
   });
 
   const readInterface = readline.createInterface({
@@ -45,17 +41,24 @@ function checkHashes(filePath) {
   readInterface.on('line', function(line) {
     const [hash, filePath] = line.split('  ');
 
-    util.fileError(checkHash, filePath, hash);
+    util.fileErrorHandler(checkHash, filePath, hash);
   });
 }
 
-try {
-  if (process.env['INPUT_CACHE_HIT'] !== 'true') {
-    console.log('Cache miss: nothing to validate.');
-    process.exit(0);
-  }
+function initGlobalVars() {
+  /* global variables for keeping track of stats */
+  global.invalid = 0;
+  global.missing = 0;
+  global.valid = 0;
+  
+  /* Return 1 on checksum or file errors if true, otherwise 0 */
+  global.fatal = false;
+}
 
-  process.on('exit', (code) => {
+exports.main = function () {
+  initGlobalVars();
+
+  function stats() {
     console.log(`Invalid files: ${invalid} `)
     console.log(`Missing files: ${missing} `)
     console.log(`Valid files: ${valid} `)
@@ -64,13 +67,16 @@ try {
     } else {
       console.log('::set-output name=valid::false')
     }
-  });
+  }
 
-  process.env['INPUT_PATH'].split('\n').forEach(function (directory, index) {
-    if (directory.trim() !== '') {
-      util.fileError(checkHashes, path.join(directory, "MD5SUMS"));
-    }
-  });
-} catch (e) {
-  util.error(e);
+  function dir(directory) {
+    return path.join(directory, "MD5SUMS");
+  }
+
+  util.mainHandler(util.ON_CACHE_MISS, stats, checkHashes, dir);
+}
+
+/* istanbul ignore next */
+if (require.main === module) {
+  exports.main();
 }
