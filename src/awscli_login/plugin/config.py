@@ -5,7 +5,6 @@ from awscli.customizations.configure.writer import ConfigFileWriter
 from ..config import Profile as BaseProfile
 from ..util import secure_touch
 
-
 class Profile(BaseProfile):
     # TODO Add validation...
     def update(self) -> None:

@@ -1,17 +1,19 @@
 import os
+import stat
 import unittest
 
 from argparse import Namespace
 from io import StringIO
 from multiprocessing import get_start_method
 from os.path import isfile
-from typing import Any, Dict
 from unittest.mock import patch
 
 from botocore.session import Session
 
 from awscli_login.const import ERROR_INVALID_PROFILE_ROLE
 from awscli_login.exceptions import (
+    CredentialProcessMisconfigured,
+    CredentialProcessNotSet,
     InvalidSelection,
     SAML,
     TooManyHttpTrafficFlags,
@@ -23,23 +25,14 @@ from awscli_login.util import (
     sort_roles,
 )
 from awscli_login.plugin.util import (
+    raise_if_credential_process_not_set,
     remove_credentials,
     save_credentials,
 )
 
 from .util import fork, ForkException
 from .base import CleanAWSEnvironment, TempDir
-
-
-def token(akey: str, skey: str, stoken: str) -> Dict[str, Dict[str, Any]]:
-    return {
-               'Credentials': {
-                                  'AccessKeyId': akey,
-                                  'SecretAccessKey': skey,
-                                  'SessionToken': stoken,
-                                  'Expiration': '2021-02-11T00:42:09Z'
-                              }
-           }
+from .config.util import test_token
 
 
 # This must be here due to pickle errors.
@@ -264,7 +257,7 @@ aws_security_token = yep
 """
 
         session = Session()
-        save_credentials(session, token('foo', 'bar', 'yep'))
+        save_credentials(session, test_token('foo', 'bar', 'yep'))
         self.assertAwsCredentialsEquals(credentials)
 
     def test_save_credentials_not_default_profile(self):
@@ -278,7 +271,7 @@ aws_security_token = c
 """
 
         session = Session()
-        save_credentials(session, token('a', 'b', 'c'))
+        save_credentials(session, test_token('a', 'b', 'c'))
         self.assertAwsCredentialsEquals(credentials)
 
     def test_remove_credentials_default_profile(self):
@@ -301,6 +294,37 @@ aws_security_token = yep
         session = Session()
         remove_credentials(session)
         self.assertAwsCredentialsEquals(credentials)
+
+    def test_credential_process_not_set(self):
+        """Ensure raises CredentialProcessNotSet"""
+        self.profile = 'default'
+        self.aws_credentials = ''
+        session = Session()
+        self.assertRaises(CredentialProcessNotSet,
+                          raise_if_credential_process_not_set,
+                          session, self.profile)
+
+    def test_credential_process_invalid(self):
+        """Ensure raises CredentialProcessInvalid"""
+        self.profile = 'default'
+        self.aws_credentials = """[default]
+        credential_process = foo
+        """
+        session = Session()
+        self.assertRaises(CredentialProcessMisconfigured,
+                          raise_if_credential_process_not_set,
+                          session, self.profile)
+
+    def test_credential_process_valid(self):
+        """Ensure does not raise exception"""
+        self.profile = 'default'
+        path = self.write("aws-login-credentials", "")
+        os.chmod(path, stat.S_IREAD | stat.S_IEXEC)
+        self.aws_credentials = f"""[default]
+        credential_process = {path} --profile default
+        """
+        session = Session()
+        raise_if_credential_process_not_set(session, self.profile)
 
 
 class TestDontClobberCommentsBase(CleanAWSEnvironment):
@@ -340,7 +364,7 @@ aws_session_token = c
 aws_security_token = c
 """
         session = Session()
-        save_credentials(session, token('a', 'b', 'c'))
+        save_credentials(session, test_token('a', 'b', 'c'))
         self.assertAwsCredentialsEquals(credentials)
 
     def test_remove_credentials_non_default_profile(self):

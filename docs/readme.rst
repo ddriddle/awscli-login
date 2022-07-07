@@ -1,15 +1,12 @@
 The awscli-login plugin allows retrieving temporary Amazon credentials
 by authenticating against a SAML Identity Provider (IdP).  This
-application is fully supported under Linux, macOS, and the `Windows
-Subsystem for Linux <https://docs.microsoft.com/en-us/windows/wsl/about>`_.
-Currently, Windows PowerShell, Command Prompt, and Git Shell for
-Windows are supported with limitations (See `Windows Issues`_).
+application is fully supported under Linux, macOS, and Windows.
 
 This product is supported by the Cybersecurity Development team at the 
 University of Illinois, on a best-effort basis. The expected End-of-Life
-and End-of-Support dates of this version are October of 2025, the same as
+and End-of-Support date of this version is October 2026, the same as
 its primary dependencies: the AWS CLI and 
-`Python V3.9 <https://www.python.org/dev/peps/pep-0596/#lifespan>`_.
+`Python V3.10 <https://peps.python.org/pep-0619/#lifespan>`_.
 
 .. |--| unicode:: U+2013   .. en dash
 .. contents:: Jump to:
@@ -154,7 +151,7 @@ because it has been stored in a secure keyring.
 
 For example, when we initially log in to prod::
 
-    $ export AWS_PROFILE=test
+    $ export AWS_PROFILE=prod
     $ aws login
     Password: ********
     Code: 123456789
@@ -164,7 +161,7 @@ the password because this is the initial login, and the code because
 this profile is configured for use with a passcode device such as
 a YubiKey. We are now no longer prompted when we log in to test::
 
-    $ aws --profile prod login
+    $ aws --profile test login
 
 Even if the IdP session has expired in this case, we will not be
 prompted for a password because it is stored in the keyring. The
@@ -303,17 +300,6 @@ enable_keyring
 
     The password property and command line flag are ignored when
     the keyring is enabled.
-disable_refresh:
-    On POSIX systems tokens are refreshed automatically unless this
-    property is set to True::
-
-        disable-refresh = True
-refresh
-    How often the refresh process attempts to renew the STS credentials
-    in seconds. When set to 0 the refresh process will refresh once
-    90% of the time till expiration has transpired (Default 0)::
-
-        refresh = 1800
 duration
     Set the time in seconds that the STS token will last. The token
     lasts for the duration you specify, or until the time specified
@@ -443,15 +429,8 @@ command::
 
     $ aws configure set cli_follow_urlparam off
 
-Windows issues
---------------
-
-Auto-renewal is not supported under the Windows PowerShell, Command
-Prompt, or Git Shell for Windows. Auto-renewal is supported under
-the Windows Subsystem for Linux (WSL).
-
 GitBash bad interpreter errors
-``````````````````````````````
+------------------------------
 
 If you receive a bad interpreter error from the aws command it may
 be because you have a space in the path of your Python interpreter::
@@ -465,7 +444,7 @@ package, or more simply just define an alias in your `~/.bashrc` file::
     alias aws='python $(which aws)'
 
 Windows Subsystem for Linux bad interpreter error
-`````````````````````````````````````````````````
+-------------------------------------------------
 
 If you receive a bad interpreter error from the aws command on
 Windows Subsystem for Linux (WSL) it may be because the location

@@ -1,30 +1,27 @@
-# from signal import signal, SIGINT, SIGTERM
 import logging
 import os
+
 from datetime import datetime
+from argparse import Namespace
+from datetime import datetime
+from typing import Optional
 
 from botocore import client as Client
 from botocore.session import Session
-from daemoniker import (
-    SIGINT,
-    SIGTERM,
-    Daemonizer,
-    SignalHandler1,
-    send
-)
 
-from ..exceptions import AlreadyLoggedIn, AlreadyLoggedOut
+from ..config import ERROR_NONE, ERROR_UNKNOWN, Profile
+from ..exceptions import AWSCLILogin, AlreadyLoggedIn
 from ..logger import configFileLogger
 from ..saml import authenticate, refresh
-from ..typing import Role
-from ..util import get_selection, nap
-from .config import Profile
+from .._typing import Role
+from ..util import get_selection, nap, token
 from .util import error_handler, remove_credentials, save_credentials
+from .util import raise_if_credential_process_not_set
 
 logger = logging.getLogger(__package__)
 
 
-def save_sts_token(session: Session, client: Client, saml: str,
+def save_sts_token(profile: Profile, client: Client, saml: str,
                    role: Role, duration: int = 0) -> datetime:
     params = dict(
         RoleArn=role[1],
@@ -40,107 +37,52 @@ def save_sts_token(session: Session, client: Client, saml: str,
 
     token = client.assume_role_with_saml(**params)
     logger.info("Retrieved temporary Amazon credentials for role: " + role[1])
-
-    return save_credentials(session, token)
-
-
-def daemonize(profile: Profile, session: Session, client: Client,
-              role: Role, expires: datetime) -> bool:
-    with Daemonizer() as (is_setup, daemonizer):
-        is_parent, profile, session, client, role, expires = daemonizer(
-            profile.pidfile,
-            profile,
-            session,
-            client,
-            role,
-            expires,
-        )
-
-        if not is_parent:
-            sighandler = SignalHandler1(profile.pidfile)
-            sighandler.start()
-
-            logger = configFileLogger(profile.logfile, logging.INFO)
-            logger.info('Startig refresh process for role %s' % role[1])
-
-            while True:
-                try:
-                    retries = 0
-                    nap(expires, 0.9, profile.refresh)
-
-                    while True:
-                        try:
-                            saml, _ = refresh(
-                                profile.ecp_endpoint_url,
-                                profile.cookies,
-                            )
-                        except Exception as e:
-                            retries += 1
-
-                            if (retries < 4):
-                                logger.info('Refresh failed: %s' % str(e))
-                                nap(expires, 0.2, profile.refresh * 0.2)
-                            else:
-                                raise
-                        else:
-                            break
-
-                    expires = save_sts_token(session, client, saml, role)
-                except SIGINT:
-                    pass
-
-        return is_parent
+    profile.save_credentials(token, role)
+    return token
 
 
 @error_handler(skip_args=False, validate=True)
-def main(profile: Profile, session: Session):
-    is_parent = True
+def main(profile: Profile, session: Session, interactive: bool = True):
+    login(profile, session, interactive)
 
-    if profile.force_refresh:
+
+def login(profile: Profile, session: Session, interactive: bool = True):
+    session.set_credentials(None, None)  # Disable credential lookup
+    client = session.create_client('sts')
+
+    # Exit if already logged in
+    if interactive:
+        raise_if_credential_process_not_set(session, profile.name)
+
         try:
             profile.raise_if_logged_in()
+            if profile.force_refresh:
+                logger.warn("Logged out: ignoring --force-refresh.")
         except AlreadyLoggedIn:
-            send(profile.pidfile, SIGINT)
-            return
-
-        logger.warning("Logged out: ignoring --force-refresh.")
-
-    try:
-        client = session.create_client('sts')
-
-        # Exit if already logged in
-        profile.raise_if_logged_in()
+            if not profile.force_refresh:
+                raise
 
         # Must know username to lookup cookies
         profile.get_username()
 
-        try:
-            saml, roles = refresh(
-                profile.ecp_endpoint_url,
-                profile.cookies,
-            )
-        except Exception:
+    try:
+        saml, roles = refresh(
+            profile.ecp_endpoint_url,
+            profile.cookies,
+        )
+    except Exception:
+        if interactive:
             creds = profile.get_credentials()
             saml, roles = authenticate(profile.ecp_endpoint_url,
                                        profile.cookies, *creds)
+        else:
+            raise
 
-        duration = profile.duration
-        role = get_selection(roles, profile.role_arn)
-        expires = save_sts_token(session, client, saml, role, duration)
-
-        if os.name == 'posix' and not profile.disable_refresh:
-            is_parent = daemonize(profile, session, client, role, expires)
-    except Exception:
-        raise
-    finally:
-        if not is_parent:
-            logger.info('Exiting refresh process')
+    duration = profile.duration
+    role = get_selection(roles, profile.role_arn, interactive)
+    return save_sts_token(profile, client, saml, role, duration)
 
 
 @error_handler()
-def logout(profile: Profile, session: Session):
-    try:
-        send(profile.pidfile, SIGTERM)
-        remove_credentials(session)
-    except IOError:
-        raise AlreadyLoggedOut
+def logout(profile: Profile, session: Session, interactive: bool = True):
+    profile.remove_credentials()

@@ -49,16 +49,14 @@ setup(
     package_dir={'': 'src'},
     python_requires='>=3.7',
     install_requires=[
-       'awscli',
        'botocore',
-       'daemoniker',
        'keyring',
        'lxml',
-       'psutil',
        'requests',
     ],
     extras_require={
         'test': [
+            'awscli',
             'tblib',
             'wurlitzer',
             'vcrpy',
@@ -70,4 +68,9 @@ setup(
             'https://github.com/techservicesillinois/awscli-login/issues',
         'Source': 'https://github.com/techservicesillinois/awscli-login',
     },
+    entry_points={
+        'console_scripts': [
+            'aws-login-credentials = awscli_login.credentials:main',
+        ],
+    }
 )
