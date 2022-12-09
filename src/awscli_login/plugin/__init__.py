@@ -4,7 +4,13 @@ import logging
 
 from argparse import Namespace
 
-from awscli.customizations.commands import BasicCommand
+# TODO: Add comments
+try:
+    from awscli.customizations.commands import BasicCommand
+except ModuleNotFoundError:
+    class BasicCommand:  # type: ignore
+        pass
+
 from botocore.session import Session
 
 from .__main__ import main, logout

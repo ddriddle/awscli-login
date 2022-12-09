@@ -4,8 +4,13 @@ from datetime import datetime
 from shutil import which
 from typing import Dict
 
-from awscli.customizations.configure.set import ConfigureSetCommand
-from awscli.customizations.configure.get import ConfigureGetCommand
+#TODO: Add comments
+try:
+    from awscli.customizations.configure.set import ConfigureSetCommand
+    from awscli.customizations.configure.get import ConfigureGetCommand
+except ModuleNotFoundError:
+    pass
+
 from botocore.utils import parse_timestamp
 from botocore.session import Session
 

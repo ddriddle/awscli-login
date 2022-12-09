@@ -156,6 +156,7 @@ class CredentialProcessMisconfigured(CredentialProcessNotSet):
     code = 14
     error = 'misconfigured'
 
+
 class ConfigurationFailed(ConfigError):
     code = 15
 

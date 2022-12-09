@@ -1,6 +1,10 @@
 # Add methods that depend on awscli here
 
-from awscli.customizations.configure.writer import ConfigFileWriter
+#TODO: Add Comments
+try:
+    from awscli.customizations.configure.writer import ConfigFileWriter
+except ModuleNotFoundError:
+    pass
 
 from ..config import Profile as BaseProfile
 from ..util import secure_touch
