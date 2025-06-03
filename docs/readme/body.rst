@@ -290,6 +290,21 @@ does warn on accounts if the AWS IAM API does not return an alias::
     Unable to retrieve aliases for:
     520135271718
 
+If you want to display the account alias on your shell prompt it
+is stored in ``~/.aws-login/identity`` and updated as you log
+in and out. You can use that file with a bash function like this::
+
+    aws_prompt_info() {
+        local IDENTITY_FILE=~/.aws-login/identity
+        local PROF=""
+
+        if [[ -f "$IDENTITY_FILE" ]] then
+            PROF=$( cat "$IDENTITY_FILE" 2>/dev/null)
+            [[ -n "$PROF" ]] && echo "[$PROF]"
+        fi
+    }
+
+
 Advanced Usage
 ==============
 
