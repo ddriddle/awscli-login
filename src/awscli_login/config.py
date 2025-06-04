@@ -55,6 +55,7 @@ CONFIG_FILE = path.join(CONFIG_DIR, 'config')
 JAR_DIR = path.join(CONFIG_DIR, 'cookies')
 CREDENTIALS_FILE = path.join(CONFIG_DIR, 'credentials')
 ACCT_ALIAS_FILE = path.join(CONFIG_DIR, 'alias')
+IDENTITY_FILE = path.join(CONFIG_DIR, 'identity')
 
 ERROR_NONE = 0
 ERROR_UNKNOWN = 1
@@ -140,6 +141,7 @@ class Profile:
         self.config_file = path.join(self.home, CONFIG_FILE)
         self.credentials_file = path.join(self.home, CREDENTIALS_FILE)
         self.alias_file = path.join(self.home, ACCT_ALIAS_FILE)
+        self.identity_file = path.join(self.home, IDENTITY_FILE)
 
         makedirs(path.join(self.home, CONFIG_DIR), mode=0o700, exist_ok=True)
         makedirs(path.join(self.home, JAR_DIR), mode=0o700, exist_ok=True)
@@ -516,6 +518,13 @@ class Profile:
             self.account_names = dict(config["accounts"])
         else:
             self.account_names = {}
+
+    def remove_identity_file():
+        os.remove(self.identity_file)
+
+    def write_identity_file(account_id):
+        with open(self.identity_file, 'w') as f:
+            print(self.account_names.get(account_id, account_id), file=f)
 
 
 def _error_handler(Profile, skip_args=True, validate=False,
