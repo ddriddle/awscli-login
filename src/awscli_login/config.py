@@ -1,5 +1,6 @@
 """ This module is used to process ~/.aws-login/config """
 import logging
+import os
 import sys
 import traceback
 
@@ -519,10 +520,10 @@ class Profile:
         else:
             self.account_names = {}
 
-    def remove_identity_file():
+    def remove_identity_file(self):
         os.remove(self.identity_file)
 
-    def write_identity_file(account_id):
+    def write_identity_file(self, account_id):
         with open(self.identity_file, 'w') as f:
             print(self.account_names.get(account_id, account_id), file=f)
 
