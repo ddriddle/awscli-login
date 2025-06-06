@@ -245,6 +245,24 @@ as the account alias as returned by: aws iam list-account-aliases.
                          'with new account names without prompting the user. '
                          'Preexisting names found in the alias file are '
                          'preserved.'
+        },
+        {
+            'name': 'display-account-name',
+            'action': 'store_true',
+            'default': False,
+            'help_text': "Returns the current profiles's account alias or ID"
+        },
+        {
+            'name': 'display-account-alias',
+            'action': 'store_true',
+            'default': False,
+            'help_text': "Returns the current profiles's account alias"
+        },
+        {
+            'name': 'display-account-id',
+            'action': 'store_true',
+            'default': False,
+            'help_text': "Returns the current profiles's account ID"
         }
     ]
 

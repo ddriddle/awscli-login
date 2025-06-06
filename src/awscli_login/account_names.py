@@ -21,16 +21,48 @@ logger = logging.getLogger(__package__)
 
 def xargs_handler(args: Namespace):
     nargs = Namespace()
+    xargs = [
+        'auto',
+        'display_account_alias',
+        'display_account_id',
+        'display_account_name',
+    ]
 
-    for arg in ['auto']:
+    for arg in xargs:
         setattr(nargs, arg, getattr(args, arg))
         delattr(args, arg)
 
     return nargs
 
 
+def handle_xargs(profile: Profile, xargs: Namespace):
+    if profile.role_arn is None:
+        return True
+
+    account_id = profile.role_arn.split(':')[4]
+    alias = profile.account_names.get(account_id)
+
+    if xargs.display_account_name:
+        print(alias or account_id)
+        return True
+
+    if xargs.display_account_id:
+        print(account_id)
+        return True
+
+    if xargs.display_account_alias:
+        if alias:
+            print(alias)
+        return True
+
+    return False
+
+
 @error_handler(extra_args_handler=xargs_handler)
 def edit_account_names(profile: Profile, session: Session, xargs: Namespace):
+    if handle_xargs(profile, xargs):
+        return
+
     names = _edit_account_names(profile, session, xargs)
     write_account_names_file(names)
 
