@@ -29,7 +29,6 @@ logger = logging.getLogger(__package__)
 def awscli_initialize(cli):
     """ Entry point called by awscli """
     cli.register('building-command-table.main', inject_commands)
-    cli.register('building-command-table.login', inject_subcommands)
 
 
 def inject_commands(command_table, session: Session, **kwargs):
@@ -38,14 +37,6 @@ def inject_commands(command_table, session: Session, **kwargs):
     """
     command_table['login'] = Login(session)
     command_table['logout'] = Logout(session)
-
-
-def inject_subcommands(command_table, session: Session, **kwargs):
-    """
-    Used to inject subcommands into the aws login command list.
-    """
-    command_table['alias'] = AccountNames(session)
-    command_table['configure'] = Configure(session)
 
 
 class ExternalCommand(BasicCommand):
@@ -78,6 +69,13 @@ class Login(ExternalCommand):
                    ' Amazon STS keys using the Shibboleth IdP and Duo'
                    ' for authentication.')
     SYNOPSIS = ('aws login [<Arg> ...]')
+
+    def __init__(self, Session):
+        self.SUBCOMMANDS = [
+            {'name': 'alias', 'command_class': AccountNames},
+            {'name': 'configure', 'command_class': Configure},
+        ]
+        return super().__init__(Session)
 
     # tests/util.py:login_cli_args defaults must match this table
     ARG_TABLE = [
@@ -242,11 +240,11 @@ as the account alias as returned by: aws iam list-account-aliases.
 
 
 class Configure(BasicCommand):
-    NAME = 'login'
+    NAME = 'configure'
     DESCRIPTION = ('''
 Configure LOGIN options. If this command is run with no arguments,
 you will be prompted for configuration values such as your IdP's
-entity ID and its ECP endpoint URL. You can configure a named profile
+ECP endpoint URL and username. You can configure a named profile
 using the --profile argument. If your config file does not exist
 (the default location is ~/.aws-login/config), it will be created
 for you. To keep an existing value, hit enter when prompted for the
@@ -291,14 +289,20 @@ file:
 To create a new configuration::\n
 \n
     $ aws login configure
-    Entity ID [None]: urn:mace:incommon:idp.edu
-    ECP Endpoint URL [None]: https://idp.edu/idp/profile/SAML2/SOAP/ECP\n
+    ECP Endpoint URL [None]: https://shib.foo.edu/idp/profile/SAML2/SOAP/ECP
+    Username [None]: myusername
+    Enable Keyring [False]:
+    Duo Factor [None]: push
+    Role ARN [None]:
 \n
-To update just the entity ID::\n
+To update just the Duo factor::\n
 \n
     $ aws login configure
-    Entity ID [urn:mace:incommon:idp.edu]: urn:mace:uncommon:foo.com
-    ECP Endpoint URL [https://idp.edu/idp/profile/SAML2/SOAP/ECP]:
+    ECP Endpoint URL [https://shib.foo.edu/idp/profile/SAML2/SOAP/ECP]:
+    Username [myusername]:
+    Enable Keyring [False]:
+    Duo Factor [push]: sms
+    Role ARN [None]:
 ''')
 
     def _run_main(self, args: Namespace, parsed_globals):
