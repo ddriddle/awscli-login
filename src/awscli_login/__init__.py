@@ -80,13 +80,6 @@ class Login(ExternalCommand):
         self.SUBCOMMANDS[1]['command_class'] = Configure
         return super().__init__(Session)
 
-    def __init__(self, Session):
-        self.SUBCOMMANDS = [
-            {'name': 'alias', 'command_class': AccountNames},
-            {'name': 'configure', 'command_class': Configure},
-        ]
-        return super().__init__(Session)
-
     # tests/util.py:login_cli_args defaults must match this table
     ARG_TABLE = [
         # Ordering matches order in docs/readme.rst
